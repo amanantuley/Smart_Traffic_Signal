@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='home.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.0-2/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.min.js"></script>
+    <script>
+        let backgroundInterval;
+        let res;
+
+        window.onload = function() {
+
+            const locationPopupShown = sessionStorage.getItem('locationPopupShown');
+
+            if (!locationPopupShown) {
+                
+                const location = "{{ session.get('location') }}"; 
+                if (location) {
+                    const loc = document.getElementById('location');
+                    loc.textContent = `Location :: ${location}`;
+                    loc.style.display = 'block';
+
+                    setTimeout(() => {
+                        loc.style.display = 'none';
+                    }, 3000);
+
+                    sessionStorage.setItem('locationPopupShown', 'true');
+                }
+            }
+
+            const toggleConsoleButton = document.getElementById('toggleConsoleButton');
+            const consoleContainer = document.getElementById('consoleContainer');
+            const closeConsoleButton = document.getElementById('closeConsoleButton');
+
+            toggleConsoleButton.addEventListener('click', () => {
+                consoleContainer.classList.toggle('hidden');
+            });
+
+            closeConsoleButton.addEventListener('click', () => {
+                consoleContainer.classList.add('hidden');
+            });
+
+            clearOldSpeedingData();
+            history.replaceState(null, null, location.href);
+            window.onpageshow = function(event) {
+                if (event.persisted) {
+                    history.replaceState(null, null, location.href);
+                }
+            };
+            window.onpopstate = function() {
+                history.go(1);
+            };
+            readCSVAndControlLights();
+        };
+
+        function resetLocationPopup() {
+            localStorage.removeItem('locationPopupShown');
+        }
+
+        function showPopup(message) {
+            const popup = document.getElementById('speedPopup');
+            popup.textContent = message;
+            popup.style.display = 'block';
+
+            setTimeout(() => {
+                popup.style.display = 'none';
+            }, 3000);
+        }
+
+        function generateLicensePlate() {
+            const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            const randomDigits = () => Math.floor(Math.random() * 10);
+            const randomLetter = () => letters.charAt(Math.floor(Math.random() * letters.length));
+
+            return `MH${randomDigits()}${randomDigits()}${randomLetter()}${randomLetter()}${randomDigits()}${randomDigits()}${randomDigits()}${randomDigits()}`;
+        }
+
+        function storeSpeedingVehicle(vehicleId, speed, timestamp) {
+            let speedingVehicles = JSON.parse(localStorage.getItem('speedingVehicles')) || [];
+            const licensePlate = generateLicensePlate();
+            speedingVehicles.push({ vehicleId, speed, licensePlate, timestamp });
+            localStorage.setItem('speedingVehicles', JSON.stringify(speedingVehicles));
+        }
+
+        function checkSpeed(vehicleId, speed) {
+            console.log(`Generated Speed: ${speed.toFixed(2)} km/h`);
+            if (speed > 80) {
+                const card1 = document.getElementById('card1');
+                card1.classList.add('high-speed');
+
+                const timestamp = new Date().toLocaleString();
+
+                showPopup(`Vehicle ID ${vehicleId} with License Plate ${generateLicensePlate()} is speeding on road 1 at ${speed.toFixed(2)} km/h!`);
+
+                const audio = new Audio("{{ url_for('static', filename='alert.mp3') }}");
+                audio.play();
+
+                storeSpeedingVehicle(vehicleId, speed, timestamp);
+
+                setTimeout(() => {
+                    card1.classList.remove('high-speed');
+                }, 3000);
+            }
+        }
+
+        function clearOldSpeedingData() {
+            localStorage.removeItem('speedingVehicles');
+        }
+
+        function simulateSpeedCheck() {
+            const vehicleId = Math.floor(Math.random() * 1000);
+            const simulatedSpeed = 60 + Math.random() * (110 - 60);
+            checkSpeed(vehicleId, simulatedSpeed);
+        }
+
+        setInterval(simulateSpeedCheck, 5000);
+
+        let csvData = [];
+        let currentIndex = 0;
+
+        async function readCSVAndControlLights() {
+            const response = await fetch('{{ url_for("static", filename="traffic_data.csv") }}');
+            const data = await response.text();
+            Papa.parse(data, {
+                header: false,
+                complete: function(results) {
+                    csvData = results.data;
+                    
+                    csvData = csvData.map(row => {
+                        if (row.length === 4) {
+                            row.push('unread');
+                        }
+                        return row;
+                    });
+                    currentIndex = findNextUnreadLine(); 
+                    processNextLine();
+                }
+            });
+        }
+
+        function findNextUnreadLine() {
+            
+            for (let i = 0; i < csvData.length; i++) {
+                if (csvData[i].length > 4 && csvData[i][4] !== 'read') {
+                    return i;
+                }
+            }
+            return csvData.length; 
+        }
+
+        async function processNextLine() {
+            if (currentIndex < csvData.length) {
+                
+                const durations = csvData[currentIndex].slice(0, 4).map(Number);
+                
+                csvData[currentIndex][4] = 'read';
+
+                await updateCSVFile(); 
+                await controlTrafficLights(durations); 
+
+                
+                currentIndex = findNextUnreadLine();
+                setTimeout(processNextLine, 1000); 
+            } else {
+                csvData = [];
+                readCSVAndControlLights(); 
+            }
+        }
+
+        async function updateCSVFile() {
+            
+            let csvString = Papa.unparse(csvData).trim(); 
+            
+            csvString = csvString.replace(/\n+/g, '\n').trim();
+
+            await fetch('{{ url_for("update_csv") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ updatedCSV: csvString })
+            });
+        }
+
+        let isTrafficLightRunning = false;
+
+        async function controlTrafficLights(durations) {
+            isTrafficLightRunning = true;
+            async function changeCardColor(cardId, color, duration) {
+                return new Promise(resolve => {
+                    document.getElementById(cardId).style.backgroundColor = color;
+                    setTimeout(resolve, duration);
+                });
+            }
+    
+            for (let i = 0; i < durations.length; i++) {
+                const cardId = `card${i + 1}`;
+                const greenDuration = durations[i] * 1000; 
+                const yellowDuration = 5000; 
+                const redDuration = 1000; 
+    
+                if (!isTrafficLightRunning) break;
+                await changeCardColor(cardId, 'green', greenDuration);
+                if (!isTrafficLightRunning) break;
+                await changeCardColor(cardId, 'yellow', yellowDuration);
+                if (!isTrafficLightRunning) break;
+                await changeCardColor(cardId, 'red', redDuration);
+                if (!isTrafficLightRunning) break;
+            }
+        }
+        
+        function handleConsoleInput() {
+            const roadNumber = document.getElementById('roadInput').value;
+            const consoleResponse = document.getElementById('consoleInput').value.toLowerCase(); 
+
+            res = consoleResponse;
+
+            console.log({ road: roadNumber, response: consoleResponse });
+
+            document.getElementById('roadInput').value = '';
+            document.getElementById('consoleInput').value = '';
+
+            const validRoads = ['1', '2', '3', '4']; 
+            if (validRoads.includes(roadNumber)) {
+                if (consoleResponse === 'yes') {
+                    isTrafficLightRunning = false; 
+                    startBackgroundLogic(roadNumber);
+                } else if (consoleResponse === 'no') {
+                    isTrafficLightRunning = false; 
+                    resetAllCards();
+                    location.reload(); 
+                }
+            } else {
+                console.error(`Invalid road number: ${roadNumber}`);
+            }
+        }
+
+        function stopBackgroundLogic() {
+            if (backgroundInterval) {
+                clearInterval(backgroundInterval);
+                backgroundInterval = null; 
+            }
+        }
+
+        function startBackgroundLogic(roadNumber) {
+            stopBackgroundLogic();
+
+            backgroundInterval = setInterval(() => {
+                changeCardBackgroundColor(`card${roadNumber}`, 'green');
+
+                const validRoads = ['1', '2', '3', '4']; 
+                validRoads.forEach(road => {
+                    if (road !== roadNumber) {
+                        changeCardBackgroundColor(`card${road}`, 'red');
+                    }
+                });
+            }, 1);
+        }
+
+        function resetAllCards() {
+            const roadIds = ['card1', 'card2', 'card3', 'card4'];
+            roadIds.forEach(cardId => {
+                document.getElementById(cardId).style.backgroundColor = ''; 
+            });
+        }
+
+        function changeCardBackgroundColor(cardId, color) {
+            const cardElement = document.getElementById(cardId);
+            if (cardElement) {
+                cardElement.style.backgroundColor = color; 
+            } else {
+                console.error(`Card with ID ${cardId} not found.`);
+            }
+        }
+    </script>
+    
+</head>
+<body>
+    <p class="menu__text" id="p1">Home</p>
+    <p class="menu__text" id="p2">Foul</p>
+    <p class="menu__text" id="p3">Graph</p>
+    <p class="menu__text" id="p4">Sign Out</p>
+    <div class="bg"></div>
+    <section class="section">
+        <div class="cards">
+            <div class="card card-1" id="card1">
+                <video class="card-video" src="{{ url_for('static', filename='cars.mp4') }}" autoplay muted loop></video>
+            </div>
+            <div class="card card-2" id="card2">
+                <video class="card-video" src="{{ url_for('static', filename='cars.mp4') }}" autoplay muted loop></video>
+            </div>
+            <div class="card card-4" id="card4">
+                <video class="card-video" src="{{ url_for('static', filename='cars.mp4') }}" autoplay muted loop></video>
+            </div>
+            <div class="card card-3" id="card3">
+                <video class="card-video" src="{{ url_for('static', filename='cars.mp4') }}" autoplay muted loop></video>
+            </div>
+        </div>
+        <div class="container">
+            <input type="checkbox" name="checkbox" class="checkbox" id="checkbox">
+            <label for="checkbox"></label>
+            <ul class="menu">
+                <li class="menu__item">
+                    <a href="{{ url_for('home') }}" id="homeLink"><img src="{{ url_for('static', filename='icons8-home-48.png') }}" alt="Home"></a>
+                </li>
+                <li class="menu__item">
+                    <a href="{{ url_for('foul') }}" id="foulLink"><img src="{{ url_for('static', filename='icons8-foul-48.png') }}" alt="Foul"></a>
+                </li>
+                <li class="menu__item">
+                    <a href="{{ url_for('graph') }}" id="graphLink"><img src="{{ url_for('static', filename='icons8-graph-48.png') }}" alt="Graph"></a>
+                </li>
+                <li class="menu__item">
+                    <a href="#" id="signOutLink"><img src="{{ url_for('static', filename='icons8-sign-out-48.png') }}" alt="Sign Out"></a>
+                </li>
+            </ul>
+        </div>
+    </section>
+    <button id="toggleConsoleButton">-></button>
+    <div id="consoleContainer" class="hidden">
+        <span id="closeConsoleButton" class="close-btn">&times;</span>
+        <input type="text" id="roadInput" placeholder="Enter road number" />
+        <input type="text" id="consoleInput" placeholder="Enter 'yes' or 'no'" />
+        <button onclick="handleConsoleInput()">Submit</button>
+    </div>
+    <div id="speedPopup" class="popup"></div>
+    <div id="location" class="location_popup"></div>
+    <script>
+        const hamburgerMenu = document.getElementById('checkbox');
+        const menuOptions = document.querySelector('.menu');
+        const signOutLink = document.getElementById('signOutLink');
+        const menuItems = document.querySelectorAll('.menu__item');
+        const menuTexts = document.querySelectorAll('.menu__text');
+
+        hamburgerMenu.addEventListener('change', () => {
+            menuOptions.classList.toggle('active');
+        });
+
+        menuItems.forEach((item, index) => {
+            item.addEventListener('mouseover', () => {
+                if (hamburgerMenu.checked) {
+                    menuTexts[index].style.opacity = '1';
+                }
+            });
+
+            item.addEventListener('mouseout', () => {
+                menuTexts[index].style.opacity = '0';
+            });
+        });
+
+        function signOut() {
+            window.location.replace('/');
+        }
+
+        signOutLink.addEventListener('click', (event) => {
+            event.preventDefault(); 
+            signOut();
+        });
+
+        window.addEventListener('load', () => {
+            history.replaceState(null, null, location.href);
+            window.onpageshow = (event) => {
+                if (event.persisted) {
+                    history.replaceState(null, null, location.href);
+                }
+            }});
+            window.onpopstate = () => {
+                history.go(1);
+            };
+        
+    </script>
+</body>
+</html>

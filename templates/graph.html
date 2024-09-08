@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graph</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='graph.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.0-2/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <p class="menu__text" id="p1">Home</p>
+    <p class="menu__text" id="p2">Foul</p>
+    <p class="menu__text" id="p3">Graph</p>
+    <p class="menu__text" id="p4">Sign Out</p>
+    <div class="bg"></div>
+    <section class="section">
+        <div class="cards">
+            <div class="card card-1">
+                <canvas id="chart1"></canvas>
+            </div>
+            <div class="card card-2">
+                <canvas id="chart2"></canvas>
+            </div>
+            <div class="card card-3">
+                <canvas id="chart3"></canvas>
+            </div>
+            <div class="card card-4">
+                <canvas id="chart4"></canvas>
+            </div>
+        </div>
+        <div class="container">
+            <input type="checkbox" name="checkbox" class="checkbox" id="checkbox">
+            <label for="checkbox"></label>
+            <ul class="menu">
+                <li class="menu__item">
+                    <a href="{{ url_for('home') }}" id="homeLink"><img src="{{ url_for('static', filename='icons8-home-48.png') }}" alt="Home"></a>
+                </li>
+                <li class="menu__item">
+                    <a href="{{ url_for('foul') }}" id="foulLink"><img src="{{ url_for('static', filename='icons8-foul-48.png') }}" alt="Foul"></a>
+                </li>
+                <li class="menu__item">
+                    <a href="{{ url_for('graph') }}" id="graphLink"><img src="{{ url_for('static', filename='icons8-graph-48.png') }}" alt="Graph"></a>
+                </li>
+                <li class="menu__item">
+                    <a href="#" id="signOutLink"><img src="{{ url_for('static', filename='icons8-sign-out-48.png') }}" alt="Sign Out"></a>
+                </li>
+            </ul>
+        </div>
+    </section>
+    <script>
+        async function fetchCSV(file) {
+            const response = await fetch(file);
+            const text = await response.text();
+            return text;
+        }
+
+        function parseCSV(text) {
+            const rows = text.split('\n').slice(1); // Skip header row
+            return rows.map(row => {
+                const columns = row.split(',');
+                return {
+                    label: columns[0],
+                    value: parseFloat(columns[1])
+                };
+            });
+        }
+
+        function updateLineGraph(chart, data) {
+            chart.data.labels = data.map(d => d.label);
+            chart.data.datasets[0].data = data.map(d => d.value);
+            chart.update();
+        }
+
+        function createLineChart(ctx, title) {
+            return new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Wait Time',
+                        data: [],
+                        fill: false, // No fill under the line
+                        borderColor: '#3498db', // Line color
+                        tension: 0.1, // Smooth line
+                        borderWidth: 2,
+                        pointBackgroundColor: '#3498db', // Point color
+                        pointRadius: 4 // Point size
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                color: '#333',
+                                font: {
+                                    size: 14
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: '#333',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            borderColor: '#ddd',
+                            borderWidth: 1
+                        },
+                        title: {
+                            display: true,
+                            text: title,
+                            color: '#333',
+                            font: {
+                                size: 16
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: '#666',
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: '#ddd'
+                            },
+                            ticks: {
+                                color: '#666',
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        async function initGraphs() {
+            // Load and parse CSV files
+            const [csvData1, csvData2, csvData3, csvData4] = await Promise.all([
+                fetchCSV("{{ url_for('static', filename='r1.csv') }}"),
+                fetchCSV("{{ url_for('static', filename='r2.csv') }}"),
+                fetchCSV("{{ url_for('static', filename='r3.csv') }}"),
+                fetchCSV("{{ url_for('static', filename='r4.csv') }}")
+            ]);
+
+            const [parsedData1, parsedData2, parsedData3, parsedData4] = [
+                parseCSV(csvData1),
+                parseCSV(csvData2),
+                parseCSV(csvData3),
+                parseCSV(csvData4)
+            ];
+
+            const ctx1 = document.getElementById('chart1').getContext('2d');
+            const ctx2 = document.getElementById('chart2').getContext('2d');
+            const ctx3 = document.getElementById('chart3').getContext('2d');
+            const ctx4 = document.getElementById('chart4').getContext('2d');
+
+            const chart1 = createLineChart(ctx1, 'Road 1');
+            const chart2 = createLineChart(ctx2, 'Road 2');
+            const chart3 = createLineChart(ctx3, 'Road 3');
+            const chart4 = createLineChart(ctx4, 'Road 4');
+
+            updateLineGraph(chart1, parsedData1);
+            updateLineGraph(chart2, parsedData2);
+            updateLineGraph(chart3, parsedData3);
+            updateLineGraph(chart4, parsedData4);
+
+            // Refresh graphs periodically
+            setInterval(async () => {
+                const [updatedCSVData1, updatedCSVData2, updatedCSVData3, updatedCSVData4] = await Promise.all([
+                fetchCSV("{{ url_for('static', filename='r1.csv') }}"),
+                fetchCSV("{{ url_for('static', filename='r2.csv') }}"),
+                fetchCSV("{{ url_for('static', filename='r3.csv') }}"),
+                fetchCSV("{{ url_for('static', filename='r4.csv') }}")
+                ]);
+
+                const [updatedParsedData1, updatedParsedData2, updatedParsedData3, updatedParsedData4] = [
+                    parseCSV(updatedCSVData1),
+                    parseCSV(updatedCSVData2),
+                    parseCSV(updatedCSVData3),
+                    parseCSV(updatedCSVData4)
+                ];
+
+                updateLineGraph(chart1, updatedParsedData1);
+                updateLineGraph(chart2, updatedParsedData2);
+                updateLineGraph(chart3, updatedParsedData3);
+                updateLineGraph(chart4, updatedParsedData4);
+            }, 5000); // Refresh every 5 seconds
+        }
+
+        window.addEventListener('load', initGraphs);
+
+        const hamburgerMenu = document.getElementById('checkbox');
+        const menuOptions = document.querySelector('.menu');
+        const menuItems = document.querySelectorAll('.menu__item');
+        const menuTexts = document.querySelectorAll('.menu__text');
+
+        hamburgerMenu.addEventListener('change', () => {
+            menuOptions.classList.toggle('active');
+        });
+
+        menuItems.forEach((item, index) => {
+            item.addEventListener('mouseover', () => {
+                if (hamburgerMenu.checked) {
+                    menuTexts[index].style.opacity = '1';
+                }
+            });
+
+            item.addEventListener('mouseout', () => {
+                menuTexts[index].style.opacity = '0';
+            });
+        });
+
+        function signOut() {
+        // Clear session data
+        sessionStorage.removeItem('loggedIn'); // Clear the logged-in flag
+
+        // Clear all history by pushing a new state before redirecting
+        history.pushState(null, '', '/'); // Add a new state (login page)
+
+        // Now, redirect to the login page without leaving history
+        window.location.replace('/'); // Redirect to the login page
+    }
+
+    const signOutLink = document.getElementById('signOutLink');
+    signOutLink.addEventListener('click', (event) => {
+        event.preventDefault(); // Prevent the default action
+        signOut(); // Call the sign-out function
+    });
+        window.addEventListener('load', () => {
+            history.replaceState(null, null, location.href);
+            window.onpageshow = (event) => {
+                if (event.persisted) {
+                    history.replaceState(null, null, location.href);
+                }
+            };
+        });
+    </script>
+</body>
+</html>

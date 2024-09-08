@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Loading...</title>
+    <script>
+        // This function will prevent going back to the login page
+        window.onload = function() {
+            history.replaceState(null, null, window.location.href);
+            window.onpopstate = function() {
+                history.replaceState(null, null, window.location.href);
+            };
+    
+            // Redirect after 5 seconds
+            setTimeout(function() {
+                window.location.href = "{{ url_for('home') }}"; // Redirect to the home route
+            }, 5000);
+        };
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='loading.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="bar" id="bar1"><span class="button" id="button1"></span></div>
+        <div class="bar" id="bar2"><span class="button" id="button2"></span></div>
+        <div class="bar" id="bar3"><span class="button" id="button3"></span></div>
+        <div class="bar" id="bar4"><span class="button" id="button4"></span></div>
+    </div>
+</body>
+</html>
