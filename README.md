@@ -1,114 +1,115 @@
 
+# 🚦 Smart Traffic Signal – Python Project
 
-# Python Projects Repository 🐍💻  
-
-This repository contains a **Smart Traffic Signal** project that showcases my skills in Python programming, problem-solving, and real-time data handling. The project demonstrates the application of Python in solving real-world problems using efficient algorithms and libraries.  
-
----
-
-## 📋 **Table of Contents**  
-
-1. [About the Repository](#about-the-repository)  
-2. [Project Description](#project-description)  
-3. [Technologies Used](#technologies-used)  
-4. [Setup and Installation](#setup-and-installation)  
-5. [Screenshots](#screenshots)  
-6. [Contributing](#contributing)  
-7. [License](#license)  
-8. [Contact](#contact)  
+This repository contains my **Smart Traffic Signal System**, a Python-based project aimed at optimizing traffic flow using real-time/simulated data. It intelligently adjusts signal durations based on vehicle density to reduce congestion and improve city traffic management.
 
 ---
 
-## 📝 **About the Repository**  
+## 📁 Folder Structure
 
-This repository features the **Smart Traffic Signal** project, which aims to optimize traffic flow using Python. The project showcases:  
-- The application of Python for real-time decision-making.  
-- The use of sensors or simulation for traffic monitoring.  
-- Implementation of algorithms to dynamically adjust signal timings based on traffic density.  
-
----
-
-## 📂 **Project Description**  
-
-### **Smart Traffic Signal**  
-- A Python-based application designed to optimize traffic signals at intersections.  
-- Uses real-time or simulated data from cameras or sensors to analyze traffic density.  
-- Dynamically adjusts the signal timings to reduce congestion and improve traffic flow.  
-
-#### Key Features:  
-1. **Dynamic Signal Timing**: Automatically adjusts green light durations based on real-time traffic conditions.  
-2. **Traffic Monitoring**: Simulates or integrates with sensors to count the number of vehicles.  
-3. **Efficient Algorithm**: Implements queue management and prioritization for smoother traffic flow.  
-4. **Scalability**: Can be extended to multiple intersections for city-wide traffic management.  
-
-*(Expand this section based on the specific features of your project.)*  
+```
+📁 static/                         # Static files (e.g., CSS, JS, images for UI if any)
+📁 templates/                      # HTML templates (for Flask app interface)
+📄 app.py                          # Main Flask application
+📄 database.py                     # Handles database connections and schema
+📄 database.db                     # SQLite database for user data/logs
+📄 generate_verification_codes.py  # Utility script for creating codes (e.g., OTPs)
+📄 temp.py                         # Temporary test script or experimental code
+📄 test.py                         # Testing or unit test file
+📄 test_time.py                    # Simulates signal timing behavior
+📄 user_activity.xlsx              # Dataset or logs of simulated user activity
+📄 LICENSE.md                      # License file (MIT or other)
+📄 Project-Report.pdf              # Final project documentation/report
+📄 SmartTrafficSignal_Aman_USC_UCT.pdf # Formal college submission document
+📄 Smart_Traffic_Signal_SEM-4.pdf  # Academic report for SEM-4
+📄 README.md                       # This file
+```
 
 ---
 
-## 💻 **Technologies Used**  
+## 🎯 Project Objective
 
-- **Python**: Main programming language for the project.  
-- **Libraries**:  
-  - `OpenCV`: For image processing and vehicle detection (if cameras are used).  
-  - `time`: For simulating signal timing.  
-  - `tkinter` or `PyQt`: For creating a GUI (if applicable).  
+To build an intelligent traffic light control system that uses real-time or simulated input to:
 
----
-
-## 🛠 **Setup and Installation**  
-
-1. Clone the repository:  
-   ```bash  
-   git clone https://github.com/amanantuley/python-projects.git  
-   ```  
-
-2. Navigate to the project folder:  
-   ```bash  
-   cd python-projects/smart-traffic-signal  
-   ```  
-
-3. Install the required dependencies:  
-   ```bash  
-   pip install -r requirements.txt  
-   ```  
-
-4. Run the project:  
-   ```bash  
-   python smart_traffic_signal.py  
-   ```  
+* Count vehicle density at intersections
+* Dynamically alter traffic signal timings
+* Reduce waiting time and congestion
+* Log user/traffic activity for analysis
 
 ---
 
-## 📸 **Screenshots**  
+## ⚙️ Technologies & Libraries Used
 
-### Traffic Signal in Action  
-![Smart Traffic Signal](screenshots/smart-traffic-signal.png)  
-
-*(Add screenshots showing the traffic signal interface or simulation outputs.)*  
-
----
-
-## 🤝 **Contributing**  
-
-Contributions are welcome!  
-1. Fork the repository.  
-2. Create a feature branch (`git checkout -b feature-name`).  
-3. Commit your changes (`git commit -m "Add feature-name"`).  
-4. Push to the branch (`git push origin feature-name`).  
-5. Open a Pull Request.  
+* **Python 3.x** – Core language
+* **Flask** – Backend web framework
+* **SQLite** – Lightweight database
+* **OpenCV** *(optional)* – For real-time camera-based vehicle detection
+* **time, random, threading** – Used in simulation logic
+* **Excel (XLSX)** – For logging and exporting user/traffic data
 
 ---
 
-## 📄 **License**  
+## 🚦 Key Features
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.  
+✅ **Dynamic Signal Timing** – Signal times change based on traffic volume
+✅ **Web-Based Dashboard** – UI built using Flask with HTML templates
+✅ **User Activity Log** – All actions and durations are stored in a DB/XLSX
+✅ **Traffic Simulation** – `test_time.py` mimics real-world traffic flow
+✅ **Extensible Design** – Can be scaled for multiple intersections
 
 ---
 
-## 📬 **Contact**  
+## 🧪 Setup Instructions
 
-- **Developer**: Aman Antuley  
-- **Email**: [your-email@example.com](mailto:your-email@example.com)  
-- **GitHub**: [https://github.com/amanantuley](https://github.com/amanantuley)  
-- **LinkedIn**: [Your LinkedIn Profile](https://www.linkedin.com/in/your-profile)  
+1. **Clone the repository**
+
+   ```bash
+   git clone https://github.com/amanantuley/smart-traffic-signal.git
+   cd smart-traffic-signal
+   ```
+
+2. **Install dependencies**
+   *(Create a `requirements.txt` if needed; otherwise manually install)*
+
+   ```bash
+   pip install flask pandas openpyxl
+   ```
+
+3. **Run the application**
+
+   ```bash
+   python app.py
+   ```
+
+4. **Access the web interface**
+   Navigate to `http://localhost:5000` in your browser.
+
+---
+
+## 📸 Screenshots
+
+> *Place screenshots in a `screenshots/` folder and reference here once available.*
+
+---
+
+## 📄 Project Reports
+
+* 📘 `Project-Report.pdf` – Final project documentation
+* 📗 `SmartTrafficSignal_Aman_USC_UCT.pdf` – Official college submission
+* 📙 `Smart_Traffic_Signal_SEM-4.pdf` – Academic report for semester-4
+
+---
+
+## 📬 Contact
+
+* 👨‍💻 **Developer**: Aman Antuley
+* 📧 **Email**: [amanantuley@gmail.com](mailto:amanantuley@gmail.com)
+* 🔗 **LinkedIn**: [linkedin.com/in/amanantuley](https://www.linkedin.com/in/amanantuley)
+* 🐙 **GitHub**: [github.com/amanantuley](https://github.com/amanantuley)
+
+---
+
+## 📜 License
+
+This project is licensed under the [MIT License](LICENSE.md). Feel free to use, modify, and distribute with attribution.
 
